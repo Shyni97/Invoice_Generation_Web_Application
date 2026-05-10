@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import InvoiceMetadataSection from "./InvoiceMetadataSection";
 import PartyDetailsSection from "./PartyDetailsSection";
 
 const billerFields = [
@@ -19,6 +20,14 @@ const emptyPartyErrors = { name: "", address: "", email: "", contact: "" };
 
 const validateEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
+const generateInvoiceNumber = () => {
+  const stamp = new Date();
+  const datePart = `${stamp.getFullYear()}${String(stamp.getMonth() + 1).padStart(2, "0")}${String(stamp.getDate()).padStart(2, "0")}`;
+  const timePart = `${String(stamp.getHours()).padStart(2, "0")}${String(stamp.getMinutes()).padStart(2, "0")}${String(stamp.getSeconds()).padStart(2, "0")}`;
+
+  return `INV-${datePart}-${timePart}`;
+};
+
 const validateParty = (section, values) => {
   const errors = { ...emptyPartyErrors };
 
@@ -34,16 +43,38 @@ const validateParty = (section, values) => {
   return errors;
 };
 
+const validateMetadata = (values) => {
+  const errors = {
+    invoiceNumber: values.invoiceNumber.trim() ? "" : "Invoice number is required.",
+    issueDate: values.issueDate ? "" : "Issue date is required.",
+    dueDate: values.dueDate ? "" : "Due date is required.",
+  };
+
+  if (values.issueDate && values.dueDate && values.dueDate < values.issueDate) {
+    errors.dueDate = "Due date cannot be before issue date.";
+  }
+
+  return errors;
+};
+
 const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   const [touched, setTouched] = useState({
     biller: { name: false, address: false, email: false, contact: false },
     client: { name: false, address: false, email: false },
+    metadata: { invoiceNumber: false, issueDate: false, dueDate: false },
   });
 
   const [errors, setErrors] = useState({
     biller: validateParty("biller", invoiceData.biller),
     client: validateParty("client", invoiceData.client),
+    metadata: validateMetadata(invoiceData),
   });
+
+  useEffect(() => {
+    if (!invoiceData.invoiceNumber) {
+      setInvoiceData(prev => ({ ...prev, invoiceNumber: generateInvoiceNumber() }));
+    }
+  }, [invoiceData.invoiceNumber, setInvoiceData]);
 
   const handleChange = (path, val) => {
     setInvoiceData(prev => {
@@ -78,6 +109,27 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
     setErrors(prev => ({
       ...prev,
       [section]: validateParty(section, invoiceData[section]),
+    }));
+  };
+
+  const updateMetadataField = (field, value) => {
+    handleChange(field, value);
+
+    setErrors(prev => ({
+      ...prev,
+      metadata: validateMetadata({ ...invoiceData, [field]: value }),
+    }));
+  };
+
+  const markMetadataTouched = (field) => {
+    setTouched(prev => ({
+      ...prev,
+      metadata: { ...prev.metadata, [field]: true },
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      metadata: validateMetadata(invoiceData),
     }));
   };
 
@@ -130,36 +182,13 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
           onFieldBlur={(field) => markFieldTouched("client", field)}
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="font-medium text-gray-700">Invoice #</span>
-            <input
-              value={invoiceData.invoiceNumber}
-              onChange={e => handleChange('invoiceNumber', e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-
-          <label className="block text-sm">
-            <span className="font-medium text-gray-700">Issue Date</span>
-            <input
-              type="date"
-              value={invoiceData.issueDate}
-              onChange={e => handleChange('issueDate', e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-
-          <label className="block text-sm">
-            <span className="font-medium text-gray-700">Due Date</span>
-            <input
-              type="date"
-              value={invoiceData.dueDate}
-              onChange={e => handleChange('dueDate', e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-        </div>
+        <InvoiceMetadataSection
+          values={invoiceData}
+          errors={errors.metadata}
+          touched={touched.metadata}
+          onFieldChange={updateMetadataField}
+          onFieldBlur={markMetadataTouched}
+        />
       </div>
 
       <div className="mt-6">
