@@ -1,19 +1,50 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-const Input = ({ label, value, onChange, type = "text", placeholder = "" }) => (
-  <label className="block text-sm">
-    <span className="text-gray-600">{label}</span>
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="mt-1 block w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200"
-    />
-  </label>
-);
+import PartyDetailsSection from "./PartyDetailsSection";
+
+const billerFields = [
+  { name: "name", label: "Company name", placeholder: "Acme Studio", required: true },
+  { name: "address", label: "Address", placeholder: "Street, city, state", required: true, multiline: true, span: 2 },
+  { name: "email", label: "Email", placeholder: "billing@acme.com", type: "email", required: true },
+  { name: "contact", label: "Contact number", placeholder: "+1 555 123 4567", required: true },
+];
+
+const clientFields = [
+  { name: "name", label: "Client name", placeholder: "Client name", required: true },
+  { name: "address", label: "Address", placeholder: "Street, city, state", required: true, multiline: true, span: 2 },
+  { name: "email", label: "Email", placeholder: "client@example.com", type: "email", required: true },
+];
+
+const emptyPartyErrors = { name: "", address: "", email: "", contact: "" };
+
+const validateEmail = (value) => /\S+@\S+\.\S+/.test(value);
+
+const validateParty = (section, values) => {
+  const errors = { ...emptyPartyErrors };
+
+  if (!values.name.trim()) errors.name = section === "biller" ? "Company name is required." : "Client name is required.";
+  if (!values.address.trim()) errors.address = "Address is required.";
+  if (!values.email.trim()) errors.email = "Email is required.";
+  else if (!validateEmail(values.email)) errors.email = "Enter a valid email address.";
+
+  if (section === "biller" && !values.contact.trim()) {
+    errors.contact = "Contact number is required.";
+  }
+
+  return errors;
+};
 
 const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
+  const [touched, setTouched] = useState({
+    biller: { name: false, address: false, email: false, contact: false },
+    client: { name: false, address: false, email: false },
+  });
+
+  const [errors, setErrors] = useState({
+    biller: validateParty("biller", invoiceData.biller),
+    client: validateParty("client", invoiceData.client),
+  });
+
   const handleChange = (path, val) => {
     setInvoiceData(prev => {
       const next = { ...prev };
@@ -27,6 +58,27 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
       cur[keys[keys.length - 1]] = val;
       return next;
     });
+  };
+
+  const updatePartyField = (section, field, value) => {
+    handleChange(`${section}.${field}`, value);
+
+    if (touched[section][field]) {
+      const nextValues = { ...invoiceData[section], [field]: value };
+      setErrors(prev => ({ ...prev, [section]: validateParty(section, nextValues) }));
+    }
+  };
+
+  const markFieldTouched = (section, field) => {
+    setTouched(prev => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: true },
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [section]: validateParty(section, invoiceData[section]),
+    }));
   };
 
   const handleItemChange = (index, field, value) => {
@@ -49,22 +101,65 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   }, [invoiceData.items]);
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-4">Invoice Details</h2>
+    <div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Invoice Details</h2>
+        <p className="mt-1 text-sm text-gray-500">Enter biller and client details to keep the preview in sync.</p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input label="Biller Name" value={invoiceData.biller.name} onChange={e => handleChange('biller.name', e.target.value)} placeholder="Your company" />
-        <Input label="Biller Email" value={invoiceData.biller.email} onChange={e => handleChange('biller.email', e.target.value)} placeholder="you@company.com" />
-        <Input label="Biller Address" value={invoiceData.biller.address} onChange={e => handleChange('biller.address', e.target.value)} placeholder="Street, City" />
-        <Input label="Biller Contact" value={invoiceData.biller.contact} onChange={e => handleChange('biller.contact', e.target.value)} placeholder="Phone" />
+      <div className="grid grid-cols-1 gap-6">
+        <PartyDetailsSection
+          title="Biller details"
+          description="The company or person issuing the invoice."
+          fields={billerFields}
+          values={invoiceData.biller}
+          errors={errors.biller}
+          touched={touched.biller}
+          onFieldChange={(field, value) => updatePartyField("biller", field, value)}
+          onFieldBlur={(field) => markFieldTouched("biller", field)}
+        />
 
-        <Input label="Client Name" value={invoiceData.client.name} onChange={e => handleChange('client.name', e.target.value)} placeholder="Client" />
-        <Input label="Client Email" value={invoiceData.client.email} onChange={e => handleChange('client.email', e.target.value)} placeholder="client@company.com" />
-        <Input label="Client Address" value={invoiceData.client.address} onChange={e => handleChange('client.address', e.target.value)} placeholder="Street, City" />
+        <PartyDetailsSection
+          title="Client details"
+          description="The customer receiving the invoice."
+          fields={clientFields}
+          values={invoiceData.client}
+          errors={errors.client}
+          touched={touched.client}
+          onFieldChange={(field, value) => updatePartyField("client", field, value)}
+          onFieldBlur={(field) => markFieldTouched("client", field)}
+        />
 
-        <Input label="Invoice #" value={invoiceData.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} />
-        <Input label="Issue Date" type="date" value={invoiceData.issueDate} onChange={e => handleChange('issueDate', e.target.value)} />
-        <Input label="Due Date" type="date" value={invoiceData.dueDate} onChange={e => handleChange('dueDate', e.target.value)} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="font-medium text-gray-700">Invoice #</span>
+            <input
+              value={invoiceData.invoiceNumber}
+              onChange={e => handleChange('invoiceNumber', e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="font-medium text-gray-700">Issue Date</span>
+            <input
+              type="date"
+              value={invoiceData.issueDate}
+              onChange={e => handleChange('issueDate', e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="font-medium text-gray-700">Due Date</span>
+            <input
+              type="date"
+              value={invoiceData.dueDate}
+              onChange={e => handleChange('dueDate', e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -105,12 +200,18 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Input label="Tax (%)" type="number" value={invoiceData.tax} onChange={e => handleChange('tax', Number(e.target.value))} />
-        <Input label="Discount (%)" type="number" value={invoiceData.discount} onChange={e => handleChange('discount', Number(e.target.value))} />
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <label className="block text-sm">
-          <span className="text-gray-600">Notes</span>
-          <textarea value={invoiceData.notes} onChange={e => handleChange('notes', e.target.value)} className="mt-1 block w-full border border-gray-200 rounded-md px-3 py-2 text-sm" rows={3} />
+          <span className="font-medium text-gray-700">Tax (%)</span>
+          <input value={invoiceData.tax} onChange={e => handleChange('tax', Number(e.target.value))} type="number" className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </label>
+        <label className="block text-sm">
+          <span className="font-medium text-gray-700">Discount (%)</span>
+          <input value={invoiceData.discount} onChange={e => handleChange('discount', Number(e.target.value))} type="number" className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </label>
+        <label className="block text-sm">
+          <span className="font-medium text-gray-700">Notes</span>
+          <textarea value={invoiceData.notes} onChange={e => handleChange('notes', e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" rows={3} />
         </label>
       </div>
     </div>
