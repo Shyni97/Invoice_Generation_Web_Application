@@ -38,23 +38,22 @@ const AppLayout = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <main className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-          <InvoiceForm
-            invoiceData={invoiceData}
-            setInvoiceData={setInvoiceData}
-          />
+          <div>
+            <InvoiceForm invoiceData={invoiceData} setInvoiceData={setInvoiceData} />
+          </div>
 
-          <InvoicePreview
-            invoiceData={invoiceData}
-          />
+          <div className="lg:sticky lg:top-6">
+            <InvoicePreview invoiceData={invoiceData} />
+          </div>
 
         </div>
-      </div>
+      </main>
     </div>
   );
 };
