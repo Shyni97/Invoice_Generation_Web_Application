@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import InvoiceMetadataSection from "./InvoiceMetadataSection";
+import InvoiceItemsTable from "./InvoiceItemsTable";
 import PartyDetailsSection from "./PartyDetailsSection";
 
 const billerFields = [
@@ -57,6 +58,23 @@ const validateMetadata = (values) => {
   return errors;
 };
 
+const validateItems = (items) => {
+  return items.map((item) => ({
+    quantity:
+      Number(item.quantity) < 0
+        ? "Quantity cannot be negative."
+        : Number.isNaN(Number(item.quantity))
+          ? "Quantity must be a number."
+          : "",
+    unitPrice:
+      Number(item.unitPrice) < 0
+        ? "Unit price cannot be negative."
+        : Number.isNaN(Number(item.unitPrice))
+          ? "Unit price must be a number."
+          : "",
+  }));
+};
+
 const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   const [touched, setTouched] = useState({
     biller: { name: false, address: false, email: false, contact: false },
@@ -68,6 +86,7 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
     biller: validateParty("biller", invoiceData.biller),
     client: validateParty("client", invoiceData.client),
     metadata: validateMetadata(invoiceData),
+    items: validateItems(invoiceData.items),
   });
 
   useEffect(() => {
@@ -134,18 +153,30 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   };
 
   const handleItemChange = (index, field, value) => {
+    const sanitizedValue = field === "description" ? value : value === "" ? "" : Math.max(0, Number(value));
+
     setInvoiceData(prev => {
-      const items = prev.items.map((it, i) => (i === index ? { ...it, [field]: value } : it));
+      const items = prev.items.map((it, i) => (i === index ? { ...it, [field]: sanitizedValue } : it));
       return { ...prev, items };
+    });
+
+    setErrors(prev => {
+      const nextItems = invoiceData.items.map((item, i) => (
+        i === index ? { ...item, [field]: sanitizedValue } : item
+      ));
+
+      return { ...prev, items: validateItems(nextItems) };
     });
   };
 
   const addItem = () => {
     setInvoiceData(prev => ({ ...prev, items: [...prev.items, { description: '', quantity: 1, unitPrice: 0 }] }));
+    setErrors(prev => ({ ...prev, items: [...prev.items, { quantity: '', unitPrice: '' }] }));
   };
 
   const removeItem = (index) => {
     setInvoiceData(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
+    setErrors(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
   const subtotal = useMemo(() => {
@@ -191,42 +222,19 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
         />
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-medium text-gray-800 mb-2">Items</h3>
+      <InvoiceItemsTable
+        items={invoiceData.items}
+        errors={errors.items}
+        onAddItem={addItem}
+        onItemChange={handleItemChange}
+        onRemoveItem={removeItem}
+      />
 
-        <div className="space-y-3">
-          {invoiceData.items.map((item, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-              <input
-                className="col-span-6 border border-gray-200 rounded-md px-3 py-2 text-sm"
-                placeholder="Description"
-                value={item.description}
-                onChange={e => handleItemChange(idx, 'description', e.target.value)}
-              />
-              <input
-                type="number"
-                className="col-span-2 border border-gray-200 rounded-md px-3 py-2 text-sm"
-                value={item.quantity}
-                min="0"
-                onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))}
-              />
-              <input
-                type="number"
-                className="col-span-3 border border-gray-200 rounded-md px-3 py-2 text-sm"
-                value={item.unitPrice}
-                min="0"
-                step="0.01"
-                onChange={e => handleItemChange(idx, 'unitPrice', Number(e.target.value))}
-              />
-              <button onClick={() => removeItem(idx)} className="col-span-1 text-sm text-red-600">Remove</button>
-            </div>
-          ))}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-gray-600">
+          Subtotal: <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
         </div>
-
-        <div className="mt-3 flex items-center gap-3">
-          <button onClick={addItem} className="px-3 py-1.5 bg-gray-100 rounded-md text-sm">Add Item</button>
-          <div className="text-sm text-gray-600">Subtotal: <span className="font-medium text-gray-800">${subtotal.toFixed(2)}</span></div>
-        </div>
+        <div className="text-sm text-gray-500">Quantity and price fields are clamped at zero to prevent negative values.</div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
