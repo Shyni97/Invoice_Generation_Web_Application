@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import InvoiceMetadataSection from "./InvoiceMetadataSection";
 import InvoiceItemsTable from "./InvoiceItemsTable";
 import PartyDetailsSection from "./PartyDetailsSection";
+import { calculateSubtotal, formatCurrency } from "../../utils/invoiceCalculations";
 
 const billerFields = [
   { name: "name", label: "Company name", placeholder: "Acme Studio", required: true },
@@ -179,9 +180,7 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
     setErrors(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
-  const subtotal = useMemo(() => {
-    return invoiceData.items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0);
-  }, [invoiceData.items]);
+  const subtotal = useMemo(() => calculateSubtotal(invoiceData.items), [invoiceData.items]);
 
   return (
     <div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -232,7 +231,7 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-600">
-          Subtotal: <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
+          Subtotal: <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
         </div>
         <div className="text-sm text-gray-500">Quantity and price fields are clamped at zero to prevent negative values.</div>
       </div>

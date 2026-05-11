@@ -1,3 +1,5 @@
+import { calculateLineItemTotal, formatCurrency } from "../../utils/invoiceCalculations";
+
 const InvoiceItemRow = ({
   item,
   index,
@@ -5,7 +7,7 @@ const InvoiceItemRow = ({
   onChange,
   onRemove,
 }) => {
-  const rowTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+  const rowTotal = calculateLineItemTotal(item.quantity, item.unitPrice);
 
   return (
     <tr className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70">
@@ -49,7 +51,7 @@ const InvoiceItemRow = ({
         <div className="flex items-center justify-between gap-3 sm:block">
           <div>
             <label className="block text-xs font-medium text-gray-500 sm:hidden">Total</label>
-            <div className="mt-1 text-sm font-semibold text-gray-900">${rowTotal.toFixed(2)}</div>
+            <div className="mt-1 text-sm font-semibold text-gray-900">{formatCurrency(rowTotal)}</div>
           </div>
 
           <button
