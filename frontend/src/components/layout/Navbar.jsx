@@ -1,7 +1,7 @@
 const Navbar = () => {
   return (
     <nav className="bg-white border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-0 sm:px-0 lg:px-0">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-md flex items-center justify-center text-white font-bold">IG</div>

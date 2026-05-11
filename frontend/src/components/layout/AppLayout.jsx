@@ -41,8 +41,8 @@ const AppLayout = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <main className="w-full px-0 py-6">
+        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-2">
 
           <div>
             <InvoiceForm invoiceData={invoiceData} setInvoiceData={setInvoiceData} />
