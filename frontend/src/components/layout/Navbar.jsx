@@ -1,4 +1,4 @@
-const Navbar = ({ onExportPdf, isExporting }) => {
+const Navbar = ({ onExportPdf, onCreateNew, isExporting }) => {
   return (
     <nav className="bg-white border-b shadow-sm">
       <div className="w-full px-0 sm:px-0 lg:px-0">
@@ -12,6 +12,13 @@ const Navbar = ({ onExportPdf, isExporting }) => {
           </div>
 
           <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={onCreateNew}
+              className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50"
+            >
+              New Invoice
+            </button>
             <button
               type="button"
               onClick={onExportPdf}
