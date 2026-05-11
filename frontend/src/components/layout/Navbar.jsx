@@ -1,4 +1,4 @@
-const Navbar = () => {
+const Navbar = ({ onExportPdf, isExporting }) => {
   return (
     <nav className="bg-white border-b shadow-sm">
       <div className="w-full px-0 sm:px-0 lg:px-0">
@@ -12,7 +12,14 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button className="hidden sm:inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm shadow hover:bg-indigo-700">New Invoice</button>
+            <button
+              type="button"
+              onClick={onExportPdf}
+              disabled={isExporting}
+              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isExporting ? "Exporting..." : "Download PDF"}
+            </button>
             <button className="inline-flex items-center px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-600 hover:bg-gray-50">Help</button>
           </div>
         </div>
