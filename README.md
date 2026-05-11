@@ -48,7 +48,7 @@ This project is a full-stack invoice management system designed for freelancers,
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone <https://github.com/Shyni97/Invoice_Generation_Web_Application>
 cd Invoice_Generation_Web_Application
 ```
 
