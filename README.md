@@ -97,22 +97,6 @@ MONGO_URI=mongodb://localhost:27017/invoice_app
 
 If you use MongoDB Atlas, replace `MONGO_URI` with your Atlas connection string.
 
-## Screenshots
-
-Add screenshots here to showcase the UI, invoice preview, PDF export, and backend API responses.
-
-- Dashboard / invoice editor
-- Live invoice preview
-- PDF export output
-- Draft management panel
-
-Suggested screenshot paths:
-
-- `docs/screenshots/editor.png`
-- `docs/screenshots/preview.png`
-- `docs/screenshots/pdf-export.png`
-- `docs/screenshots/api-postman.png`
-
 ## API Endpoints
 
 Base URL: `/api/invoices`
@@ -199,7 +183,3 @@ Invoice_Generation_Web_Application/
 │  └─ package.json
 └─ README.md
 ```
-
-## License
-
-No license has been specified yet.

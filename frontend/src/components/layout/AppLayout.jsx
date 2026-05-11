@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-import InvoiceDraftManager from "./InvoiceDraftManager";
 import Navbar from "./Navbar";
+import DashboardSidebar from "../sidebar/DashboardSidebar";
 import InvoiceForm from "../forms/InvoiceForm";
+import AllInvoicesPage from "../invoice/AllInvoicesPage";
 import InvoicePreview from "../preview/InvoicePreview";
 import { buildInvoiceFileName, exportElementAsPdf } from "../../utils/exportInvoicePdf";
 import {
@@ -46,6 +47,7 @@ const AppLayout = () => {
   const previewRef = useRef(null);
   const hydrationRef = useRef(false);
   const savedDraftsRef = useRef([]);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isExporting, setIsExporting] = useState(false);
   const [invoiceData, setInvoiceData] = useState(createEmptyInvoiceData);
   const [savedDrafts, setSavedDrafts] = useState([]);
@@ -113,6 +115,7 @@ const AppLayout = () => {
 
     setActiveDraftId(nextDraftId);
     setInvoiceData(emptyInvoiceData);
+    setActiveTab("dashboard");
     saveActiveDraftId(nextDraftId);
   };
 
@@ -125,6 +128,7 @@ const AppLayout = () => {
 
     setActiveDraftId(draft.id);
     setInvoiceData(draft.data);
+    setActiveTab("dashboard");
     saveActiveDraftId(draft.id);
   };
 
@@ -158,35 +162,86 @@ const AppLayout = () => {
     try {
       const fileName = buildInvoiceFileName(invoiceData.invoiceNumber);
       await exportElementAsPdf(previewRef.current, fileName);
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      window.alert(error?.message || "Unable to export PDF right now. Please try again.");
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar onExportPdf={handleExportPdf} onCreateNew={handleCreateNewDraft} isExporting={isExporting} />
-
-      <InvoiceDraftManager
-        drafts={savedDrafts}
-        activeDraftId={activeDraftId}
+    <div className="min-h-screen bg-[#f5f5f5] text-slate-900">
+      <Navbar
+        onExportPdf={handleExportPdf}
         onCreateNew={handleCreateNewDraft}
-        onLoadDraft={handleLoadDraft}
-        onDeleteDraft={handleDeleteDraft}
+        isExporting={isExporting}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
-      <main className="w-full px-0 py-6">
-        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-2">
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        {activeTab === "invoices" ? (
+          <AllInvoicesPage
+            drafts={savedDrafts}
+            activeDraftId={activeDraftId}
+            onOpenInvoice={handleLoadDraft}
+            onDeleteInvoice={handleDeleteDraft}
+            onCreateNew={handleCreateNewDraft}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_minmax(420px,480px)]">
+            <div className="xl:sticky xl:top-[94px] xl:self-start">
+              <DashboardSidebar
+                drafts={savedDrafts}
+                activeDraftId={activeDraftId}
+                onCreateNew={handleCreateNewDraft}
+                onLoadDraft={handleLoadDraft}
+                onDeleteDraft={handleDeleteDraft}
+              />
+            </div>
 
-          <div>
-            <InvoiceForm invoiceData={invoiceData} setInvoiceData={setInvoiceData} />
+            <div className="space-y-6">
+              <InvoiceForm invoiceData={invoiceData} setInvoiceData={setInvoiceData} />
+            </div>
+
+            <div className="space-y-4 xl:sticky xl:top-[94px] xl:self-start">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">PDF export preview</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50"
+                  >
+                    <span className="text-sm">⌕</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50"
+                  >
+                    <span className="text-sm">⎙</span>
+                  </button>
+                </div>
+              </div>
+
+              <div ref={previewRef}>
+                <InvoicePreview invoiceData={invoiceData} />
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isExporting}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isExporting ? "Exporting..." : "Download PDF"}
+                </button>
+                <p className="text-center text-xs text-slate-400">Last auto-saved 2 minutes ago</p>
+              </div>
+            </div>
           </div>
-
-          <div ref={previewRef} className="lg:sticky lg:top-6">
-            <InvoicePreview invoiceData={invoiceData} />
-          </div>
-
-        </div>
+        )}
       </main>
     </div>
   );

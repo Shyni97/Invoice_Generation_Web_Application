@@ -1,4 +1,5 @@
 import { calculateLineItemTotal, formatCurrency } from "../../utils/invoiceCalculations";
+import { TrashIcon } from "../common/Icons";
 
 const InvoiceItemRow = ({
   item,
@@ -10,60 +11,52 @@ const InvoiceItemRow = ({
   const rowTotal = calculateLineItemTotal(item.quantity, item.unitPrice);
 
   return (
-    <tr className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70">
-      <td className="py-3 px-4 align-top">
-        <label className="block text-xs font-medium text-gray-500 sm:hidden">Description</label>
+    <div className="group grid grid-cols-[minmax(0,1fr)_92px_120px] items-start gap-3 px-4 py-4 transition hover:bg-slate-50/70 sm:px-5">
+      <div className="relative min-w-0">
+        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:hidden">Description</label>
         <input
           value={item.description}
           onChange={(event) => onChange(index, "description", event.target.value)}
           placeholder="Item description"
-          className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         />
-      </td>
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 sm:opacity-0 sm:group-hover:opacity-100"
+          aria-label="Remove item"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </button>
+      </div>
 
-      <td className="py-3 px-4 align-top sm:w-32">
-        <label className="block text-xs font-medium text-gray-500 sm:hidden">Quantity</label>
+      <div className="sm:px-1">
+        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:hidden">Quantity</label>
         <input
           type="number"
           min="0"
           step="1"
           value={item.quantity}
           onChange={(event) => onChange(index, "quantity", event.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-center text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         />
-        {errors.quantity ? <span className="mt-1 block text-xs text-red-500">{errors.quantity}</span> : null}
-      </td>
+        {errors.quantity ? <span className="mt-2 block text-xs font-medium text-red-500">{errors.quantity}</span> : null}
+      </div>
 
-      <td className="py-3 px-4 align-top sm:w-36">
-        <label className="block text-xs font-medium text-gray-500 sm:hidden">Unit price</label>
+      <div className="text-right">
+        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:hidden">Rate</label>
         <input
           type="number"
           min="0"
           step="0.01"
           value={item.unitPrice}
           onChange={(event) => onChange(index, "unitPrice", event.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-right text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         />
-        {errors.unitPrice ? <span className="mt-1 block text-xs text-red-500">{errors.unitPrice}</span> : null}
-      </td>
-
-      <td className="py-3 px-4 align-top sm:w-36">
-        <div className="flex items-center justify-between gap-3 sm:block">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 sm:hidden">Total</label>
-            <div className="mt-1 text-sm font-semibold text-gray-900">{formatCurrency(rowTotal)}</div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="inline-flex items-center rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50"
-          >
-            Remove
-          </button>
-        </div>
-      </td>
-    </tr>
+        {errors.unitPrice ? <span className="mt-2 block text-xs font-medium text-red-500">{errors.unitPrice}</span> : null}
+        <div className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{formatCurrency(rowTotal)}</div>
+      </div>
+    </div>
   );
 };
 

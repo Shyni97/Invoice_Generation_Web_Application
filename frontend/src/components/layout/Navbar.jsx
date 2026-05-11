@@ -1,34 +1,55 @@
-const Navbar = ({ onExportPdf, onCreateNew, isExporting }) => {
-  return (
-    <nav className="bg-white border-b shadow-sm">
-      <div className="w-full px-0 sm:px-0 lg:px-0">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-md flex items-center justify-center text-white font-bold">IG</div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-800">Invoice Generator</h1>
-              <p className="text-xs text-gray-500">Create clean, professional invoices</p>
-            </div>
-          </div>
+import Button from "../common/Button";
+import { Avatar, BellIcon, GridIcon, FileTextIcon } from "../common/Icons";
 
-          <div className="flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={onCreateNew}
-              className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50"
-            >
-              New Invoice
-            </button>
-            <button
-              type="button"
-              onClick={onExportPdf}
-              disabled={isExporting}
-              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isExporting ? "Exporting..." : "Download PDF"}
-            </button>
-            <button className="inline-flex items-center px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-600 hover:bg-gray-50">Help</button>
-          </div>
+const tabs = [
+  { id: "dashboard", label: "Dashboard", icon: GridIcon },
+  { id: "invoices", label: "Invoices", icon: FileTextIcon },
+];
+
+const Navbar = ({ onExportPdf, onCreateNew, isExporting, activeTab, onTabChange }) => {
+  return (
+    <nav className="sticky top-0 z-30 h-[70px] border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={() => {
+            onCreateNew();
+            onTabChange("dashboard");
+          }}
+          className="text-xl font-semibold tracking-tight text-slate-900"
+        >
+          InvoiceFlow
+        </button>
+
+        <div className="hidden items-center gap-6 md:flex">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`relative flex items-center gap-2 pb-2 text-sm font-medium transition ${
+                  isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+                {isActive ? <span className="absolute inset-x-0 -bottom-[1px] h-0.5 rounded-full bg-blue-600" /> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" className="h-10 w-10 p-0 text-slate-500">
+            <BellIcon className="h-4.5 w-4.5" />
+          </Button>
+          <Avatar />
+          <Button variant="primary" className="hidden h-10 px-4 md:inline-flex" onClick={onExportPdf} disabled={isExporting}>
+            {isExporting ? "Exporting..." : "Download PDF"}
+          </Button>
         </div>
       </div>
     </nav>

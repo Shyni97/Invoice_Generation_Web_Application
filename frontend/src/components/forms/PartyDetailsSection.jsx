@@ -11,10 +11,10 @@ const PartyDetailsSection = ({
   onFieldBlur,
 }) => {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 sm:p-5">
-      <div className="mb-4">
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-        {description ? <p className="mt-1 text-sm text-gray-500">{description}</p> : null}
+    <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm sm:p-5">
+      <div className="mb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-400">{title}</p>
+        {description ? <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p> : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

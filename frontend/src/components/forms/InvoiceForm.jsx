@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
+import Card from "../common/Card";
+import Button from "../common/Button";
+import SectionTitle from "../common/SectionTitle";
 import InvoiceMetadataSection from "./InvoiceMetadataSection";
 import InvoiceItemsTable from "./InvoiceItemsTable";
 import PartyDetailsSection from "./PartyDetailsSection";
-import { calculateSubtotal, formatCurrency } from "../../utils/invoiceCalculations";
+import { calculateInvoiceTotals, calculateSubtotal, formatCurrency } from "../../utils/invoiceCalculations";
 
 const billerFields = [
   { name: "name", label: "Company name", placeholder: "Acme Studio", required: true },
@@ -76,7 +79,14 @@ const validateItems = (items) => {
   }));
 };
 
+const tabs = [
+  { id: "basic", label: "Basic Details" },
+  { id: "items", label: "Line Items" },
+  { id: "notes", label: "Additional Notes" },
+];
+
 const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
+  const [activeTab, setActiveTab] = useState("basic");
   const [touched, setTouched] = useState({
     biller: { name: false, address: false, email: false, contact: false },
     client: { name: false, address: false, email: false },
@@ -92,19 +102,19 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
 
   useEffect(() => {
     if (!invoiceData.invoiceNumber) {
-      setInvoiceData(prev => ({ ...prev, invoiceNumber: generateInvoiceNumber() }));
+      setInvoiceData((prev) => ({ ...prev, invoiceNumber: generateInvoiceNumber() }));
     }
   }, [invoiceData.invoiceNumber, setInvoiceData]);
 
   const handleChange = (path, val) => {
-    setInvoiceData(prev => {
+    setInvoiceData((prev) => {
       const next = { ...prev };
-      const keys = path.split('.');
+      const keys = path.split(".");
       let cur = next;
-      for (let i = 0; i < keys.length - 1; i++) {
-        const k = keys[i];
-        cur[k] = { ...cur[k] };
-        cur = cur[k];
+      for (let index = 0; index < keys.length - 1; index += 1) {
+        const key = keys[index];
+        cur[key] = { ...cur[key] };
+        cur = cur[key];
       }
       cur[keys[keys.length - 1]] = val;
       return next;
@@ -116,17 +126,17 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
 
     if (touched[section][field]) {
       const nextValues = { ...invoiceData[section], [field]: value };
-      setErrors(prev => ({ ...prev, [section]: validateParty(section, nextValues) }));
+      setErrors((prev) => ({ ...prev, [section]: validateParty(section, nextValues) }));
     }
   };
 
   const markFieldTouched = (section, field) => {
-    setTouched(prev => ({
+    setTouched((prev) => ({
       ...prev,
       [section]: { ...prev[section], [field]: true },
     }));
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
       [section]: validateParty(section, invoiceData[section]),
     }));
@@ -135,19 +145,19 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   const updateMetadataField = (field, value) => {
     handleChange(field, value);
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
       metadata: validateMetadata({ ...invoiceData, [field]: value }),
     }));
   };
 
   const markMetadataTouched = (field) => {
-    setTouched(prev => ({
+    setTouched((prev) => ({
       ...prev,
       metadata: { ...prev.metadata, [field]: true },
     }));
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
       metadata: validateMetadata(invoiceData),
     }));
@@ -156,43 +166,49 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
   const handleItemChange = (index, field, value) => {
     const sanitizedValue = field === "description" ? value : value === "" ? "" : Math.max(0, Number(value));
 
-    setInvoiceData(prev => {
-      const items = prev.items.map((it, i) => (i === index ? { ...it, [field]: sanitizedValue } : it));
+    setInvoiceData((prev) => {
+      const items = prev.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: sanitizedValue } : item));
       return { ...prev, items };
     });
 
-    setErrors(prev => {
-      const nextItems = invoiceData.items.map((item, i) => (
-        i === index ? { ...item, [field]: sanitizedValue } : item
-      ));
+    setErrors((prev) => {
+      const nextItems = invoiceData.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: sanitizedValue } : item));
 
       return { ...prev, items: validateItems(nextItems) };
     });
   };
 
   const addItem = () => {
-    setInvoiceData(prev => ({ ...prev, items: [...prev.items, { description: '', quantity: 1, unitPrice: 0 }] }));
-    setErrors(prev => ({ ...prev, items: [...prev.items, { quantity: '', unitPrice: '' }] }));
+    setInvoiceData((prev) => ({ ...prev, items: [...prev.items, { description: "", quantity: 1, unitPrice: 0 }] }));
+    setErrors((prev) => ({ ...prev, items: [...prev.items, { quantity: "", unitPrice: "" }] }));
+    setActiveTab("items");
   };
 
   const removeItem = (index) => {
-    setInvoiceData(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
-    setErrors(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
+    setInvoiceData((prev) => ({ ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) }));
+    setErrors((prev) => ({ ...prev, items: prev.items.filter((_, itemIndex) => itemIndex !== index) }));
   };
 
   const subtotal = useMemo(() => calculateSubtotal(invoiceData.items), [invoiceData.items]);
+  const totals = useMemo(
+    () => calculateInvoiceTotals(invoiceData.items, invoiceData.tax, invoiceData.discount),
+    [invoiceData.discount, invoiceData.items, invoiceData.tax],
+  );
 
-  return (
-    <div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Invoice Details</h2>
-        <p className="mt-1 text-sm text-gray-500">Enter biller and client details to keep the preview in sync.</p>
-      </div>
+  const renderBasicDetails = () => (
+    <div className="space-y-5">
+      <InvoiceMetadataSection
+        values={invoiceData}
+        errors={errors.metadata}
+        touched={touched.metadata}
+        onFieldChange={updateMetadataField}
+        onFieldBlur={markMetadataTouched}
+      />
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PartyDetailsSection
-          title="Biller details"
-          description="The company or person issuing the invoice."
+          title="From (you)"
+          description="Business details shown on the invoice header."
           fields={billerFields}
           values={invoiceData.biller}
           errors={errors.biller}
@@ -202,8 +218,8 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
         />
 
         <PartyDetailsSection
-          title="Client details"
-          description="The customer receiving the invoice."
+          title="Bill to"
+          description="Customer details for the invoice recipient."
           fields={clientFields}
           values={invoiceData.client}
           errors={errors.client}
@@ -211,45 +227,123 @@ const InvoiceForm = ({ invoiceData, setInvoiceData }) => {
           onFieldChange={(field, value) => updatePartyField("client", field, value)}
           onFieldBlur={(field) => markFieldTouched("client", field)}
         />
-
-        <InvoiceMetadataSection
-          values={invoiceData}
-          errors={errors.metadata}
-          touched={touched.metadata}
-          onFieldChange={updateMetadataField}
-          onFieldBlur={markMetadataTouched}
-        />
       </div>
+    </div>
+  );
 
+  const renderLineItems = () => (
+    <div className="space-y-5">
       <InvoiceItemsTable
         items={invoiceData.items}
         errors={errors.items}
         onAddItem={addItem}
         onItemChange={handleItemChange}
-        onRemoveItem={removeItem}
+        onRemove={removeItem}
       />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-gray-600">
-          Subtotal: <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
+      <Card className="p-5">
+        <div className="space-y-3 text-sm">
+          <div className="flex items-center justify-between gap-4 text-slate-500">
+            <span>Subtotal</span>
+            <span className="font-medium text-slate-900">{formatCurrency(subtotal)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-4 text-slate-500">
+            <span>Tax ({invoiceData.tax || 0}%)</span>
+            <span className="font-medium text-slate-900">{formatCurrency(totals.taxAmount)}</span>
+          </div>
+          <div className="border-t border-slate-200 pt-4 flex items-center justify-between gap-4 text-base font-semibold text-slate-900">
+            <span>Total</span>
+            <span>{formatCurrency(totals.grandTotal)}</span>
+          </div>
         </div>
-        <div className="text-sm text-gray-500">Quantity and price fields are clamped at zero to prevent negative values.</div>
+      </Card>
+    </div>
+  );
+
+  const renderNotes = () => (
+    <Card className="p-5 sm:p-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="block text-sm">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Tax (%)</span>
+          <input
+            value={invoiceData.tax}
+            onChange={(event) => handleChange("tax", Number(event.target.value))}
+            type="number"
+            className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Discount (%)</span>
+          <input
+            value={invoiceData.discount}
+            onChange={(event) => handleChange("discount", Number(event.target.value))}
+            type="number"
+            className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          />
+        </label>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <label className="block text-sm">
-          <span className="font-medium text-gray-700">Tax (%)</span>
-          <input value={invoiceData.tax} onChange={e => handleChange('tax', Number(e.target.value))} type="number" className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-gray-700">Discount (%)</span>
-          <input value={invoiceData.discount} onChange={e => handleChange('discount', Number(e.target.value))} type="number" className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-gray-700">Notes</span>
-          <textarea value={invoiceData.notes} onChange={e => handleChange('notes', e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" rows={3} />
-        </label>
+      <label className="mt-4 block text-sm">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Additional notes</span>
+        <textarea
+          value={invoiceData.notes}
+          onChange={(event) => handleChange("notes", event.target.value)}
+          rows={5}
+          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          placeholder="Add payment terms, bank details, or a thank-you note..."
+        />
+      </label>
+
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+        <p className="leading-6">
+          The invoice preview updates automatically as you edit. Drafts continue to save locally in the browser.
+        </p>
       </div>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <SectionTitle
+          title="New Invoice"
+          description="Create a professional invoice for your client."
+        />
+
+        <Button variant="secondary" className="h-11 px-5 text-sm font-semibold" onClick={() => {}}>
+          Save Draft
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="border-b border-slate-200 px-5 pt-5 sm:px-6">
+          <div className="flex items-center gap-6 overflow-x-auto">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative shrink-0 pb-4 text-sm font-medium transition ${
+                    isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {tab.label}
+                  {isActive ? <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-blue-600" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          {activeTab === "basic" ? renderBasicDetails() : null}
+          {activeTab === "items" ? renderLineItems() : null}
+          {activeTab === "notes" ? renderNotes() : null}
+        </div>
+      </Card>
     </div>
   );
 };
